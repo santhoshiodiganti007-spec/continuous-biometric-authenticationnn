@@ -44,6 +44,18 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "An internal server error occurred. Please consult backend logs."}
     )
 
+# Root route
+@app.get("/", tags=["System"])
+def root():
+    """Root welcome endpoint with API metadata and docs link."""
+    return {
+        "project": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "status": "operational",
+        "documentation": "/docs",
+        "health": "/health"
+    }
+
 # Health endpoint (Phase 2 requirement)
 @app.get("/health", tags=["System"])
 def health_check():
