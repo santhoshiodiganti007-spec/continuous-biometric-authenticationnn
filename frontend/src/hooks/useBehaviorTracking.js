@@ -35,7 +35,7 @@ export const useBehaviorTracking = (sessionId, onLiveUpdate) => {
   const handleKeyDown = useCallback((e) => {
     if (!isTracking) return;
     const now = performance.now();
-    const code = e.code;
+    const code = e.code || e.key || 'Key_Unknown';
 
     // Avoid multiple triggers for key hold
     if (!activeKeysRef.current.has(code)) {
@@ -46,28 +46,32 @@ export const useBehaviorTracking = (sessionId, onLiveUpdate) => {
   const handleKeyUp = useCallback((e) => {
     if (!isTracking) return;
     const now = performance.now();
-    const code = e.code;
+    const code = e.code || e.key || 'Key_Unknown';
 
-    if (activeKeysRef.current.has(code)) {
-      const pressTime = activeKeysRef.current.get(code);
-      const holdDuration = Math.max(1.0, now - pressTime);
-      const flightTime = lastKeyReleaseTimeRef.current ? Math.max(0.0, pressTime - lastKeyReleaseTimeRef.current) : 50.0;
-      
-      lastKeyReleaseTimeRef.current = now;
+    let pressTime = activeKeysRef.current.get(code);
+    if (!pressTime) {
+      // If press was missed before focus, assume reasonable default hold time
+      pressTime = Math.max(0, now - 85.0);
+    } else {
       activeKeysRef.current.delete(code);
-
-      const event = {
-        timestamp: Date.now(),
-        press_time: pressTime,
-        release_time: now,
-        hold_duration: holdDuration,
-        flight_time: flightTime,
-        key_category: categorizeKey(code)
-      };
-
-      keystrokeBufferRef.current.push(event);
-      setKeystrokeCount((prev) => prev + 1);
     }
+
+    const holdDuration = Math.max(1.0, now - pressTime);
+    const flightTime = lastKeyReleaseTimeRef.current ? Math.max(0.0, pressTime - lastKeyReleaseTimeRef.current) : 50.0;
+    
+    lastKeyReleaseTimeRef.current = now;
+
+    const event = {
+      timestamp: Date.now(),
+      press_time: pressTime,
+      release_time: now,
+      hold_duration: holdDuration,
+      flight_time: flightTime,
+      key_category: categorizeKey(code)
+    };
+
+    keystrokeBufferRef.current.push(event);
+    setKeystrokeCount((prev) => prev + 1);
   }, [isTracking]);
 
   // --- Mouse Dynamics Listeners ---
@@ -225,12 +229,18 @@ export const useBehaviorTracking = (sessionId, onLiveUpdate) => {
   useEffect(() => {
     if (!isTracking) return;
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('wheel', handleWheel, { passive: true });
+    const options = { capture: true, passive: true };
+    const keyOptions = { capture: true };
+
+    window.addEventListener('keydown', handleKeyDown, keyOptions);
+    window.addEventListener('keyup', handleKeyUp, keyOptions);
+    document.addEventListener('keydown', handleKeyDown, keyOptions);
+    document.addEventListener('keyup', handleKeyUp, keyOptions);
+
+    window.addEventListener('mousemove', handleMouseMove, options);
+    window.addEventListener('mousedown', handleMouseDown, options);
+    window.addEventListener('mouseup', handleMouseUp, options);
+    window.addEventListener('wheel', handleWheel, options);
 
     // Periodic flush timer every 3.5 seconds
     flushIntervalRef.current = setInterval(() => {
@@ -238,12 +248,15 @@ export const useBehaviorTracking = (sessionId, onLiveUpdate) => {
     }, 3500);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown, keyOptions);
+      window.removeEventListener('keyup', handleKeyUp, keyOptions);
+      document.removeEventListener('keydown', handleKeyDown, keyOptions);
+      document.removeEventListener('keyup', handleKeyUp, keyOptions);
+
+      window.removeEventListener('mousemove', handleMouseMove, options);
+      window.removeEventListener('mousedown', handleMouseDown, options);
+      window.removeEventListener('mouseup', handleMouseUp, options);
+      window.removeEventListener('wheel', handleWheel, options);
       if (flushIntervalRef.current) clearInterval(flushIntervalRef.current);
     };
   }, [isTracking, handleKeyDown, handleKeyUp, handleMouseMove, handleMouseDown, handleMouseUp, handleWheel, flushBuffers]);

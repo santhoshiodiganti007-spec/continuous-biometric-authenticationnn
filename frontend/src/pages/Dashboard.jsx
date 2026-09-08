@@ -209,6 +209,48 @@ export const Dashboard = ({
         />
       </div>
 
+      {/* Live Continuous Interaction Workspace */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl backdrop-blur-md space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-4 h-4" />
+            Live Behavioral Interaction Workspace
+          </div>
+          <span className="text-[11px] text-slate-400">
+            Type or interact here to feed the continuous Transformer in real-time
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <textarea
+              placeholder={
+                isTracking
+                  ? "Type anything here naturally (e.g. your thoughts, research notes, or arbitrary sentences)... Keystroke dynamics timing is continuously captured."
+                  : "Click 'Start Continuous Session' above to activate live keystroke and mouse tracking."
+              }
+              rows={3}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl p-4 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none transition resize-none"
+            />
+          </div>
+
+          <div className="flex flex-col justify-between bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold uppercase block mb-1">
+                Live Sensor Dynamics
+              </span>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Typing inside this box or moving the cursor across the screen updates both the local buffer and the Transformer evaluation loop.
+              </p>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs font-mono text-cyan-400">
+              <span>Keys: {keystrokeCount}</span>
+              <span>Mouse: {mouseEventCount}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Explainable AI & History Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ExplainabilityChart
